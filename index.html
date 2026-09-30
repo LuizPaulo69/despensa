@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Despensa</title>
+<meta name="description" content="Leitor de código de barras e controle da despensa de casa. Os dados ficam no seu aparelho.">
+<meta name="theme-color" content="#f5f7f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101410" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header class="topo">
+  <div class="topo-nome">
+    <span class="marca" aria-hidden="true"></span>
+    <h1>Despensa</h1>
+  </div>
+  <div class="topo-dir">
+    <span id="selo-offline" class="selo selo-aviso" hidden>sem internet</span>
+    <button id="bt-tema" class="bt-icone" type="button" aria-label="Alternar tema claro e escuro">
+      <span id="bt-tema-txt" aria-hidden="true">◐</span>
+    </button>
+  </div>
+</header>
+
+<main>
+
+<!-- ========================= ESCANEAR ========================= -->
+<section id="aba-escanear" class="aba" aria-labelledby="tab-escanear">
+
+  <div class="visor" id="visor">
+    <video id="video" playsinline muted disablepictureinpicture></video>
+    <div class="mira" aria-hidden="true">
+      <span class="mira-canto c1"></span><span class="mira-canto c2"></span>
+      <span class="mira-canto c3"></span><span class="mira-canto c4"></span>
+      <span class="mira-linha"></span>
+    </div>
+    <p class="visor-aviso" id="visor-aviso">
+      Aponte a câmera para o código de barras.<br>
+      <span class="fraco">A câmera só liga quando você pedir, e a imagem não sai do aparelho.</span>
+    </p>
+  </div>
+
+  <div class="linha-acoes">
+    <button id="bt-camera" class="bt bt-forte" type="button">Ligar câmera</button>
+    <button id="bt-lanterna" class="bt bt-quieto" type="button" hidden aria-pressed="false">Lanterna</button>
+  </div>
+
+  <label class="chave" for="modo-rapido">
+    <input type="checkbox" id="modo-rapido">
+    <span>
+      <strong>Compra rápida</strong>
+      <small>Produto já conhecido entra com +1 sozinho, sem parar para preencher. Bom para passar o carrinho inteiro.</small>
+    </span>
+  </label>
+
+  <form id="form-manual" class="cartao form-manual">
+    <label for="codigo-manual">Digitar o código à mão</label>
+    <div class="par">
+      <input id="codigo-manual" name="codigo" type="text" inputmode="numeric" autocomplete="off"
+             spellcheck="false" placeholder="7891000100103" aria-describedby="dica-manual">
+      <button class="bt" type="submit">Buscar</button>
+    </div>
+    <small id="dica-manual" class="fraco">Para quando a embalagem está amassada, molhada ou a luz não ajuda.</small>
+  </form>
+
+  <p id="leitor-status" class="fraco status-leitor"></p>
+
+  <section id="recentes-bloco" class="bloco" hidden>
+    <h2 class="titulo-bloco">Lidos agora</h2>
+    <ul id="recentes" class="recentes"></ul>
+  </section>
+</section>
+
+<!-- ========================= DESPENSA ========================= -->
+<section id="aba-despensa" class="aba" hidden aria-labelledby="tab-despensa">
+
+  <div class="resumo" id="resumo">
+    <div class="resumo-item">
+      <span class="resumo-num" id="num-itens">0</span>
+      <span class="resumo-rot">produtos</span>
+    </div>
+    <div class="resumo-item">
+      <span class="resumo-num" id="num-unidades">0</span>
+      <span class="resumo-rot">unidades</span>
+    </div>
+    <div class="resumo-item">
+      <span class="resumo-num" id="num-valor">—</span>
+      <span class="resumo-rot">valor estimado</span>
+    </div>
+  </div>
+
+  <div class="filtros">
+    <input id="busca" type="search" placeholder="Buscar por nome, marca ou código" aria-label="Buscar na despensa">
+    <div class="chips" id="chips-filtro" role="group" aria-label="Filtrar">
+      <button class="chip ativo" type="button" data-filtro="todos">Todos</button>
+      <button class="chip" type="button" data-filtro="acabando">Acabando</button>
+      <button class="chip" type="button" data-filtro="validade">Validade</button>
+      <button class="chip" type="button" data-filtro="sem-preco">Sem preço</button>
+    </div>
+    <label class="ordem" for="ordem">
+      <span class="fraco">Ordem</span>
+      <select id="ordem">
+        <option value="recente">Mexido por último</option>
+        <option value="nome">Nome</option>
+        <option value="quantidade">Menor quantidade</option>
+        <option value="validade">Vence primeiro</option>
+        <option value="preco">Maior preço</option>
+      </select>
+    </label>
+  </div>
+
+  <ul id="lista" class="lista"></ul>
+  <p id="lista-vazia" class="vazio" hidden></p>
+</section>
+
+<!-- ========================= AJUSTES ========================= -->
+<section id="aba-ajustes" class="aba" hidden aria-labelledby="tab-ajustes">
+
+  <section class="cartao">
+    <h2 class="titulo-bloco">Seus dados</h2>
+    <p class="fraco">
+      A despensa fica guardada neste navegador, neste aparelho. Ninguém mais vê, e nada é enviado
+      para servidor nenhum — mas limpar os dados do navegador apaga tudo. O backup abaixo é a
+      proteção contra isso.
+    </p>
+    <div class="linha-acoes">
+      <button id="bt-export-json" class="bt" type="button">Baixar backup (JSON)</button>
+      <button id="bt-export-csv" class="bt bt-quieto" type="button">Baixar planilha (CSV)</button>
+    </div>
+    <div class="linha-acoes">
+      <label class="bt bt-quieto rotulo-arquivo" for="arq-import">Restaurar backup</label>
+      <input id="arq-import" type="file" accept="application/json,.json" class="escondido-visual">
+    </div>
+    <p id="import-msg" class="fraco" hidden></p>
+  </section>
+
+  <section class="cartao">
+    <h2 class="titulo-bloco">Leitura e consulta</h2>
+    <dl class="dados">
+      <dt>Leitor de código</dt><dd id="info-leitor">verificando…</dd>
+      <dt>Produtos no catálogo</dt><dd id="info-catalogo">0</dd>
+      <dt>Consultas à base pública</dt><dd id="info-consultas">0 nesta sessão</dd>
+      <dt>Versão do app</dt><dd id="info-versao" class="mono">—</dd>
+    </dl>
+    <p class="fraco">
+      Os nomes vêm do Open Food Facts, base pública e gratuita. Ela cobre bem alimentos; produto de
+      limpeza, higiene e marca própria de mercado muitas vezes não estão lá — nesses casos você
+      cadastra o nome uma vez e ele passa a ser resolvido na hora, sem internet.
+    </p>
+  </section>
+
+  <section class="cartao cartao-risco">
+    <h2 class="titulo-bloco">Apagar tudo</h2>
+    <p class="fraco">Remove o estoque e o catálogo deste aparelho. Não tem como desfazer.</p>
+    <div id="zona-apagar">
+      <button id="bt-apagar" class="bt bt-risco" type="button">Apagar a despensa</button>
+    </div>
+  </section>
+</section>
+
+</main>
+
+<!-- ficha do produto lido -->
+<div id="painel" class="painel" hidden>
+  <div class="painel-fundo" id="painel-fundo"></div>
+  <form id="painel-caixa" class="painel-caixa" novalidate>
+    <div class="painel-topo">
+      <img id="p-imagem" class="p-imagem" alt="" hidden>
+      <div class="p-ident">
+        <p id="p-selo" class="selo"></p>
+        <h2 id="p-nome">—</h2>
+        <p id="p-sub" class="fraco"></p>
+        <p id="p-codigo" class="mono codigo"></p>
+      </div>
+      <button id="bt-fechar" class="bt-icone" type="button" aria-label="Fechar">✕</button>
+    </div>
+
+    <div id="p-novos" class="p-campos" hidden>
+      <label for="p-in-nome">Nome do produto</label>
+      <input id="p-in-nome" type="text" autocomplete="off" placeholder="Detergente neutro 500 ml">
+      <div class="dupla">
+        <span>
+          <label for="p-in-marca">Marca</label>
+          <input id="p-in-marca" type="text" autocomplete="off" placeholder="Ypê">
+        </span>
+        <span>
+          <label for="p-in-categoria">Categoria</label>
+          <input id="p-in-categoria" type="text" autocomplete="off" list="lista-categorias" placeholder="Limpeza">
+          <datalist id="lista-categorias"></datalist>
+        </span>
+      </div>
+    </div>
+
+    <div class="p-campos">
+      <label for="p-qtd">Quantidade</label>
+      <div class="stepper">
+        <button type="button" class="bt-step" data-passo="-1" aria-label="Diminuir">−</button>
+        <input id="p-qtd" type="number" inputmode="numeric" min="0" step="1" value="1">
+        <button type="button" class="bt-step" data-passo="1" aria-label="Aumentar">+</button>
+      </div>
+
+      <div class="dupla">
+        <span>
+          <label for="p-preco">Preço unitário</label>
+          <input id="p-preco" type="text" inputmode="decimal" autocomplete="off" placeholder="8,49">
+        </span>
+        <span>
+          <label for="p-minimo">Avisar quando sobrar</label>
+          <input id="p-minimo" type="number" inputmode="numeric" min="0" step="1" value="1">
+        </span>
+      </div>
+
+      <div class="dupla">
+        <span>
+          <label for="p-mercado">Mercado</label>
+          <input id="p-mercado" type="text" autocomplete="off" list="lista-mercados" placeholder="Onde comprou">
+          <datalist id="lista-mercados"></datalist>
+        </span>
+        <span>
+          <label for="p-validade">Validade</label>
+          <input id="p-validade" type="date">
+        </span>
+      </div>
+    </div>
+
+    <p id="p-erro" class="erro" hidden></p>
+
+    <div class="painel-acoes">
+      <button id="bt-salvar" class="bt bt-forte" type="submit">Salvar na despensa</button>
+      <button id="bt-mais-um" class="bt" type="button">Só somar +1</button>
+      <button id="bt-remover" class="bt bt-risco bt-quieto" type="button" hidden>Tirar da despensa</button>
+    </div>
+  </form>
+</div>
+
+<nav class="tabs" role="tablist">
+  <button id="tab-escanear" class="tab ativo" role="tab" aria-selected="true" data-aba="escanear">
+    <span class="tab-ic" aria-hidden="true"></span>Escanear
+  </button>
+  <button id="tab-despensa" class="tab" role="tab" aria-selected="false" data-aba="despensa">
+    <span class="tab-ic" aria-hidden="true"></span>Despensa
+    <span id="tab-badge" class="tab-badge" hidden>0</span>
+  </button>
+  <button id="tab-ajustes" class="tab" role="tab" aria-selected="false" data-aba="ajustes">
+    <span class="tab-ic" aria-hidden="true"></span>Ajustes
+  </button>
+</nav>
+
+<div id="avisos" class="avisos" aria-live="polite" aria-atomic="false"></div>
+
+<div id="barra-atualizar" class="barra-atualizar" hidden>
+  <span>Tem uma versão nova do app.</span>
+  <button id="bt-recarregar" class="bt bt-forte" type="button">Atualizar</button>
+</div>
+
+<script src="app.js" type="module"></script>
+</body>
+</html>
