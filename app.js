@@ -503,10 +503,11 @@ function pintarPainel() {
 
   const img = $('p-imagem');
   if (p && p.imagem) {
-    img.src = p.imagem;
+    // o handler vem antes do src: se a foto falhar, o fallback ainda roda
+    img.onerror = () => { img.hidden = true; };
     img.alt = p.nome || '';
     img.hidden = false;
-    img.onerror = () => { img.hidden = true; };
+    img.src = p.imagem;
   } else {
     img.hidden = true;
     img.removeAttribute('src');
@@ -721,13 +722,13 @@ function renderLista() {
 
     if (produto.imagem) {
       const img = el('img', 'item-thumb');
-      img.src = produto.imagem;
       img.alt = '';
       img.loading = 'lazy';
       img.addEventListener('error', () => {
         const rep = el('span', 'item-thumb', (produto.nome || '?').trim().charAt(0).toUpperCase());
         img.replaceWith(rep);
       });
+      img.src = produto.imagem; // src por último: o handler de erro já está armado
       li.appendChild(img);
     } else {
       li.appendChild(el('span', 'item-thumb', (produto.nome || '?').trim().charAt(0).toUpperCase()));
