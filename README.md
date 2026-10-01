@@ -57,8 +57,9 @@ node tools/gen-icons.mjs
 | `tools/gen-icons.mjs` | gera os PNGs do ícone com o zlib do Node |
 
 A leitura usa o `BarcodeDetector` do próprio navegador quando existe (Chrome, Android,
-Samsung Internet). No Safari/iPhone e no Firefox, que não têm essa API, o app baixa o ZXing
-sob demanda — funciona, só é mais lento.
+Samsung Internet). No Safari/iPhone e no Firefox, que não têm essa API, o app usa o ZXing —
+funciona, só é mais lento. O ZXing já vem junto na instalação do app nesses navegadores, então o
+scanner funciona sem internet desde o primeiro uso.
 
 Dois anteparos contra leitura errada: o código precisa ser lido igual duas vezes seguidas, e o
 dígito verificador do GTIN tem que fechar.
@@ -69,5 +70,9 @@ dígito verificador do GTIN tem que fechar.
   frequentemente não estão lá — nesses casos o cadastro manual é o caminho normal, não um erro.
 - Código que começa com `2` é interno da loja (balança, granel): não identifica produto fora
   daquele mercado, então vai direto para cadastro manual, sem gastar consulta.
+- Na etiqueta de balança (frios, carnes, padaria) o código **muda a cada pesagem**, porque traz o
+  preço ou o peso dentro dele. O app reconhece o produto pelos 7 primeiros dígitos, que são o
+  código dele na loja: o mesmo queijo é reconhecido na próxima compra. Duas lojas podem, em tese,
+  usar o mesmo código para produtos diferentes; se acontecer, é só corrigir o nome.
 - O estoque vive neste navegador, neste aparelho. Outro celular é outra despensa — a ponte
   entre eles é o backup JSON.

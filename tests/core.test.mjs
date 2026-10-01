@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  digitoGtin, gtinValido, upcEparaUpcA, ehCodigoInterno, nomeFormatoGtin,
+  digitoGtin, gtinValido, upcEparaUpcA, ehCodigoInterno, chaveDeBalanca, nomeFormatoGtin,
   normalizarLeitura, urlOff, produtoDeOff, parseNumeroBR, diasEntre,
   estadoItem, valorEstimado, casaBusca, lerImport, mesclar, paraCsv, montarExport,
 } from '../core.js';
@@ -248,4 +248,19 @@ test('CSV abre no Excel em português', () => {
   assert.equal(linhas[0].replace('﻿', '').split(';')[0], 'codigo');
   assert.match(linhas[1], /"Leite; Moça ""raro"""/); // ponto e vírgula e aspas escapados
   assert.match(linhas[1], /;8,50;/); // decimal com vírgula
+});
+
+test('etiqueta de balança: o mesmo queijo em pesagens diferentes é o mesmo produto', () => {
+  // Mussarela, código 001234 na loja, pesada duas vezes: R$ 12,34 e R$ 18,90.
+  const a = '2001234' + '01234';
+  const b = '2001234' + '01890';
+  const etiquetaA = a + digitoGtin(a);
+  const etiquetaB = b + digitoGtin(b);
+
+  assert.notEqual(etiquetaA, etiquetaB, 'o código completo muda a cada pesagem');
+  assert.equal(chaveDeBalanca(etiquetaA), '2001234');
+  assert.equal(chaveDeBalanca(etiquetaB), '2001234', 'mas a chave é a mesma');
+
+  assert.equal(chaveDeBalanca('7891000100103'), null, 'produto industrializado não é etiqueta');
+  assert.equal(chaveDeBalanca('20012345'), null, 'EAN-8 interno não é etiqueta de balança');
 });

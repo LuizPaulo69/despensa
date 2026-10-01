@@ -1,0 +1,4 @@
+# LF em todo lugar, inclusive no checkout do Windows.
+* text=auto eol=lf
+
+*.png binary

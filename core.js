@@ -66,6 +66,20 @@ export function ehCodigoInterno(code) {
   return /^2\d{7}$|^2\d{11}$|^2\d{12}$/.test(code);
 }
 
+/**
+ * Etiqueta de balança (frios, carnes, padaria): EAN-13 que começa com 2. As
+ * posições 2 a 7 são o código do produto na loja; as posições 8 a 12 trazem o
+ * preço ou o peso DAQUELA pesagem. Por isso o código completo muda a cada
+ * compra, e usá-lo como chave transformava cada pacote de queijo num produto
+ * novo. A chave estável são os 7 primeiros dígitos.
+ *
+ * Limite conhecido: duas lojas podem usar o mesmo código para produtos
+ * diferentes. Numa despensa de casa isso é raro, e o nome pode ser corrigido.
+ */
+export function chaveDeBalanca(code) {
+  return /^2\d{12}$/.test(code) ? code.slice(0, 7) : null;
+}
+
 export function nomeFormatoGtin(code) {
   if (code.length === 13) return 'ean_13';
   if (code.length === 12) return 'upc_a';

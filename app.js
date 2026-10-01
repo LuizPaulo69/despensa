@@ -1,7 +1,7 @@
 // app.js — câmera, banco local e tela. As regras puras ficam em core.js.
 
 import {
-  normalizarLeitura, ehCodigoInterno, urlOff, produtoDeOff, parseNumeroBR,
+  normalizarLeitura, ehCodigoInterno, chaveDeBalanca, urlOff, produtoDeOff, parseNumeroBR,
   fmtBRL, fmtDataCurta, estadoItem, valorEstimado, casaBusca,
   montarExport, lerImport, mesclar, paraCsv,
 } from './core.js';
@@ -191,6 +191,9 @@ async function prepararLeitor() {
 function carregarScript(src) {
   return new Promise((ok, erro) => {
     const s = document.createElement('script');
+    // CORS em vez de "opaco": o service worker consegue ler a resposta,
+    // guardá-la para uso offline e conferir se ela veio inteira.
+    s.crossOrigin = 'anonymous';
     s.src = src;
     s.async = true;
     s.onload = () => ok();
@@ -418,7 +421,13 @@ async function consultarOff(code) {
 
 /* ============================ fluxo de leitura ============================ */
 
-async function processarCodigo(code, veioDoLeitor) {
+async function processarCodigo(codeLido, veioDoLeitor) {
+  // Etiqueta de balança muda a cada pesagem: o catálogo guarda pelo código do
+  // produto na loja, senão cada pacote de queijo viraria um produto novo.
+  const balanca = chaveDeBalanca(codeLido);
+  const code = balanca ?? codeLido;
+  const interno = balanca !== null || ehCodigoInterno(codeLido);
+
   const conhecido = estado.produtos.get(code);
 
   if (conhecido) {
@@ -432,7 +441,7 @@ async function processarCodigo(code, veioDoLeitor) {
     return;
   }
 
-  if (ehCodigoInterno(code)) {
+  if (interno) {
     abrirPainel(code, { code, nome: '', marca: '', embalagem: '', imagem: '', categoria: '', origem: 'loja' },
       { novo: true, interno: true });
     return;
